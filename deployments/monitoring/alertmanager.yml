@@ -1,0 +1,80 @@
+global:
+  smtp_from: 'test@gmail.com'
+  smtp_smarthost: smtp.gmail.com:587
+  smtp_auth_username: 'test@gmail.com'
+  smtp_auth_identity: 'test@gmail.com'
+  smtp_auth_password: 'xxx'
+
+route:
+  # fallback receiver
+  receiver: admin
+  group_wait: 40s # We initially set how long to wait for other alerts to send a notification for an alert group.
+  group_interval: 2s # We set how long to wait before sending a notification about new alerts added to an alert group where an initial notification has already been sent.
+  repeat_interval: 1m  # if notification has already been sent for that alert, we set how long to wail before sending a notification again.
+  routes:
+    # Company 1 Solutions.
+    - match_re:
+        app_type: (linux|windows)
+      # fallback receiver
+      receiver: ss-admin
+      routes:
+        # Team 1 in Company 1
+        - match:
+            app_type: linux
+          # fallback receiver
+          receiver: linux-team-admin
+          group_by: [category] #grouping operation
+          routes:
+            - match:
+                severity: critical
+              receiver: linux-team-manager
+            - match:
+                severity: warning
+              receiver: linux-team-lead
+
+        # Team 2 in Company 1
+        - match:
+            app_type: windows
+          # fallback receiver
+          receiver: windows-team-admin
+          routes:
+            - match:
+                severity: critical
+              receiver: windows-team-manager
+            - match:
+                severity: warning
+              receiver: windows-team-lead
+
+
+receivers:
+  - name: admin
+    email_configs:
+      - to: 'test@gmail.com'
+
+  - name: ss-admin
+    email_configs:
+      - to: 'test@gmail.com'
+
+  - name: linux-team-admin
+    email_configs:
+      - to: 'test@gmail.com'
+
+  - name: linux-team-lead
+    email_configs:
+      - to: 'test@gmail.com'
+
+  - name: linux-team-manager
+    email_configs:
+      - to: 'test@gmail.com'
+
+  - name: windows-team-admin
+    email_configs:
+      - to: 'test@gmail.com'
+
+  - name: windows-team-lead
+    email_configs:
+      - to: 'test@gmail.com'
+
+  - name: windows-team-manager
+    email_configs:
+      - to: 'test@gmail.com'

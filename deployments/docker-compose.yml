@@ -1,0 +1,123 @@
+version: "3.8"
+
+services:
+  prometheus:
+    container_name: prometheus_container
+    image: prom/prometheus
+    restart: unless-stopped
+    ports:
+      - "9000:9090"
+    volumes:
+      - ./prometheus:/etc/monitoring
+      - prometheus-data:/monitoring
+    command: --web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml  # If you use --web.enable-lifecycle you can reload configuration files (e.g. rules) without restarting Prometheus:
+    networks:
+      - grpc_sample
+
+  mongo:
+    container_name: mongo
+    image: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - grpc_sample
+
+  grafana:
+    container_name: grafana_container
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources # data source configuration
+      - grafana-data:/var/lib/grafana # used to save dashboards
+    networks:
+      - grpc_sample
+
+  alertmanager:
+    image: prom/alertmanager:v0.23.0
+    restart: always
+    ports:
+      - "9093:9093"
+    volumes:
+      - "./monitoring:/config"
+      - alertmanager-data:/data
+    networks:
+      - grpc_sample
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    expose:
+      - 9100
+    networks:
+      - grpc_sample
+
+  jaeger:
+    container_name: jaeger_container
+    restart: always
+    image: jaegertracing/all-in-one:1.21
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+    ports:
+      - 5775:5775/udp
+      - 6831:6831/udp
+      - 6832:6832/udp
+      - 5778:5778
+      - 16686:16686
+      - 14268:14268
+      - 14250:14250
+      - 9411:9411
+    networks:
+      - grpc_sample
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.1
+    container_name: elasticsearch
+    environment:
+      - xpack.monitoring.enabled=true
+      - xpack.watcher.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - grpc_sample
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.13.1
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    networks:
+      - grpc_sample
+
+volumes:
+  mongo-data:
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:
+  elasticsearch-data:
+
+networks:
+  grpc_sample:
+    driver: bridge

@@ -1,0 +1,56 @@
+syntax="proto3";
+
+package product;
+
+option go_package="github.com/sefikcan/ms-grpc-sample/product/proto";
+
+message GetProductDetailRequest {
+  string id=1;
+}
+
+message GetProductDetailResponse {
+  string id=1;
+  string name=2;
+  string category=3;
+  string option_name=4;
+}
+
+message CreateProductRequest {
+  string name=1;
+  string category=2;
+  string option_name=3;
+}
+
+message CreateProductResponse {
+  string id=1;
+  string name=2;
+  string category=3;
+  string option_name=4;
+}
+
+message UpdateProductRequest {
+  string id=1;
+  string name=2;
+  string category=3;
+  string option_name=4;
+}
+
+message UpdateProductResponse {
+  string id=1;
+  string name=2;
+  string category=3;
+  string option_name=4;
+}
+
+message DeleteProductRequest {
+  string id=1;
+}
+
+message DeleteProductResponse {}
+
+service ProductService {
+  rpc GetProductDetail(GetProductDetailRequest) returns (GetProductDetailResponse);
+  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+  rpc DeleteProduct(DeleteProductRequest) returns (DeleteProductResponse);
+  rpc UpdateProduct(UpdateProductRequest) returns (UpdateProductResponse);
+}

@@ -1,0 +1,26 @@
+server:
+  appVersion: "1.0.0"
+  host: "0.0.0.0"
+  port: "50051"
+  mode: "Dev"
+  networkType: "tcp"
+  ctxTimeout: 10
+
+logger:
+  development: true
+  encoding: "json"
+  level: "info"
+  elasticSearchUrl: "http://localhost:9200/"
+
+jaeger:
+  host: "localhost:6831"
+  serviceName: "Product_Api"
+  logSpans: false
+
+mongo:
+  hostName: "localhost"
+  port: "27017"
+
+metric:
+  url: "localhost:7070"
+  serviceName: "Product_Api"
