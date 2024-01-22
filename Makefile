@@ -1,3 +1,5 @@
+.PHONY: migrate migrate_down migrate_up migrate_version docker prod local swaggo
+
 BIN_DIR = bin
 PROTO_DIR = proto
 SERVER_DIR = server
@@ -78,3 +80,10 @@ about: ## Display info related to the build
 
 help: ## Show this help
 	@${HELP_CMD}
+
+# ===================================================================
+# Tools Commands
+
+swaggo:
+	echo "Starting swagger generating"
+	swag init -g ./bff/cmd/server/main.go -o ./docs

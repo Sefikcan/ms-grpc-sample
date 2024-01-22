@@ -1,0 +1,143 @@
+basePath: /api/v1
+definitions:
+  requests.CreateProductRequest:
+    properties:
+      category:
+        type: string
+      name:
+        maxLength: 12
+        minLength: 3
+        type: string
+      optionName:
+        type: string
+    required:
+    - category
+    - name
+    - optionName
+    type: object
+  requests.UpdateProductRequest:
+    properties:
+      category:
+        type: string
+      id:
+        type: string
+      name:
+        maxLength: 12
+        minLength: 3
+        type: string
+      optionName:
+        type: string
+    required:
+    - category
+    - id
+    - name
+    - optionName
+    type: object
+  responses.ProductResponse:
+    properties:
+      category:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      optionName:
+        type: string
+    type: object
+host: localhost:50050
+info:
+  contact:
+    name: Sefik Can Kanber
+    url: https://github.com/sefikcan
+  description: Ms gRPC Sample
+  title: Ms gRPC Sample
+  version: "1.0"
+paths:
+  /products:
+    post:
+      consumes:
+      - application/json
+      description: Create product handler
+      parameters:
+      - description: Create Product
+        in: body
+        name: createProductRequest
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/responses.ProductResponse'
+      summary: Create product
+      tags:
+      - Product
+  /products/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete by id product handler
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Delete product
+      tags:
+      - Product
+    get:
+      consumes:
+      - application/json
+      description: Get by id product handler
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.ProductResponse'
+      summary: Get by id product
+      tags:
+      - Product
+    put:
+      consumes:
+      - application/json
+      description: Update product handler
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Product
+        in: body
+        name: updateProductRequest
+        required: true
+        schema:
+          $ref: '#/definitions/requests.UpdateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.ProductResponse'
+      summary: Update product
+      tags:
+      - Product
+swagger: "2.0"

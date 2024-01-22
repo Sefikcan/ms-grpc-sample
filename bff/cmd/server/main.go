@@ -5,6 +5,7 @@ import (
 	"github.com/sefikcan/ms-grpc-sample/bff/internal/product/server"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/config"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/logger"
+	_ "github.com/sefikcan/ms-grpc-sample/docs"
 	"github.com/uber/jaeger-client-go"
 	jaegerCfg "github.com/uber/jaeger-client-go/config"
 	jaegerLog "github.com/uber/jaeger-client-go/log"
@@ -13,6 +14,13 @@ import (
 	"log"
 )
 
+// @title Ms gRPC Sample
+// @version 1.0
+// @description Ms gRPC Sample
+// @contact.name Sefik Can Kanber
+// @contact.url https://github.com/sefikcan
+// @BasePath /api/v1
+// @host localhost:50050
 func main() {
 	log.Println("Starting bff api server")
 

@@ -4,8 +4,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/sefikcan/ms-grpc-sample/bff/internal/product/handlers"
+	"github.com/sefikcan/ms-grpc-sample/bff/internal/product/middlewares"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/config"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/logger"
+	"github.com/sefikcan/ms-grpc-sample/bff/pkg/metric"
+	"github.com/sefikcan/ms-grpc-sample/bff/pkg/util"
+	pb "github.com/sefikcan/ms-grpc-sample/proto"
+	echoSwagger "github.com/swaggo/echo-swagger"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,14 +43,7 @@ func (s *Server) Run() error {
 		}
 	}()
 
-	go func() {
-		s.logger.Infof("Starting Debug Server on PORT: %s", s.cfg.Server.Port)
-		if err := http.ListenAndServe(s.cfg.Server.Port, http.DefaultServeMux); err != nil {
-			s.logger.Errorf("Error ListenAndServe: %s", err)
-		}
-	}()
-
-	if err := s.MapHandlers(s.echo); err != nil {
+	if err := s.Register(s.echo); err != nil {
 		return err
 	}
 
@@ -53,6 +55,60 @@ func (s *Server) Run() error {
 	defer shutdown()
 	s.logger.Info("Server exited properly")
 	return s.echo.Server.Shutdown(ctx)
+}
+
+func (s *Server) Register(e *echo.Echo) error {
+	metrics, err := metric.CreateMetrics(s.cfg.Metric.Url, s.cfg.Metric.ServiceName)
+	if err != nil {
+		s.logger.Errorf("CreateMetrics error: %s", err)
+	}
+	s.logger.Infof("Metrics available URL: %s, ServiceName: %s", s.cfg.Metric.Url, s.cfg.Metric.ServiceName)
+
+	conn, err := grpc.Dial(s.cfg.ClientsConfig.ProductServiceClientUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		s.logger.Fatalf("Failed to connect: %v\n", err)
+	}
+	defer func(conn *grpc.ClientConn) {
+		err := conn.Close()
+		if err != nil {
+			s.logger.Fatal(err)
+		}
+	}(conn)
+
+	productServiceClient := pb.NewProductServiceClient(conn)
+
+	productHandler := handlers.NewProductHandler(s.cfg, s.logger, productServiceClient)
+
+	middlewareManager := middlewares.NewMiddlewareManager(s.cfg, s.logger)
+	e.Use(middlewareManager.RequestLoggerMiddleware)
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderXRequestID},
+	}))
+	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
+		StackSize:         1 << 10, //1kb
+		DisablePrintStack: true,
+		DisableStackAll:   true,
+	}))
+	e.Use(middleware.RequestID())
+	e.Use(middlewareManager.MetricsMiddleware(metrics))
+	e.Use(middleware.Secure())
+	e.Use(middleware.BodyLimit("2M"))
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
+
+	v1 := e.Group("/api/v1")
+	health := v1.Group("/health")
+	productGroup := v1.Group("/products")
+
+	handlers.MapProductRoutes(productGroup, productHandler)
+
+	health.GET("", func(c echo.Context) error {
+		s.logger.Infof("Health check RequestID: %s", util.GetRequestId(c))
+		return c.JSON(http.StatusOK, map[string]string{"status": "OK"})
+	})
+
+	return nil
 }
 
 func NewServer(cfg *config.Config, logger logger.Logger) *Server {
