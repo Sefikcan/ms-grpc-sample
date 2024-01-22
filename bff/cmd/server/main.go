@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/opentracing/opentracing-go"
+	"github.com/sefikcan/ms-grpc-sample/bff/internal/product/server"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/config"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/logger"
 	"github.com/uber/jaeger-client-go"
@@ -51,8 +52,8 @@ func main() {
 	}(closer)
 	zapLogger.Info("Opentracing connected")
 
-	/*s := server.NewServer(cfg, zapLogger)
+	s := server.NewServer(cfg, zapLogger)
 	if err = s.Run(); err != nil {
 		log.Fatal(err)
-	}*/
+	}
 }

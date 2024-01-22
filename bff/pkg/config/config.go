@@ -17,19 +17,27 @@ const (
 )
 
 type Config struct {
-	Server ServerConfig `mapstructure:"server"`
-	Metric MetricConfig `mapstructure:"metric"`
-	Logger LoggerConfig `mapstructure:"logger"`
-	Jaeger JaegerConfig `mapstructure:"jaeger"`
+	Server        ServerConfig  `mapstructure:"server"`
+	ClientsConfig ClientsConfig `mapstructure:"clients"`
+	Metric        MetricConfig  `mapstructure:"metric"`
+	Logger        LoggerConfig  `mapstructure:"logger"`
+	Jaeger        JaegerConfig  `mapstructure:"jaeger"`
+}
+
+type ClientsConfig struct {
+	ProductServiceClientUrl string `mapstructure:"productClientUrl"`
 }
 
 type ServerConfig struct {
-	AppVersion  string `mapstructure:"appVersion"`
-	Host        string `mapstructure:"host"`
-	Port        string `mapstructure:"port"`
-	Mode        string `mapstructure:"mode"`
-	NetworkType string `mapstructure:"networkType"`
-	CtxTimeout  int    `mapstructure:"ctxTimeout"`
+	AppVersion     string `mapstructure:"appVersion"`
+	Host           string `mapstructure:"host"`
+	Port           string `mapstructure:"port"`
+	Mode           string `mapstructure:"mode"`
+	ReadTimeout    int    `mapstructure:"readTimeout"`
+	WriteTimeout   int    `mapstructure:"writeTimeout"`
+	SSL            bool   `mapstructure:"ssl"`
+	MaxHeaderBytes int    `mapstructure:"maxHeaderBytes"`
+	CtxTimeout     int    `mapstructure:"ctxTimeout"`
 }
 
 type LoggerConfig struct {
