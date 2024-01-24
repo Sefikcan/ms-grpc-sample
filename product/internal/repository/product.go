@@ -24,7 +24,9 @@ type productRepository struct {
 func (p productRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	collection := p.db.Database(p.config.Mongo.DatabaseName).Collection(p.config.Mongo.CollectionName)
 
-	_, err := collection.DeleteOne(ctx, id)
+	filter := bson.M{"_id": id}
+
+	_, err := collection.DeleteOne(ctx, filter)
 	return err
 }
 
