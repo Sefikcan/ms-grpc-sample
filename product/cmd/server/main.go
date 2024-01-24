@@ -1,70 +1,89 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"github.com/labstack/gommon/log"
-	"github.com/opentracing/opentracing-go"
-	"github.com/sefikcan/ms-grpc-sample/product/internal/server"
+	"github.com/sefikcan/ms-grpc-sample/product/internal/repository"
+	"github.com/sefikcan/ms-grpc-sample/product/internal/use_case"
 	"github.com/sefikcan/ms-grpc-sample/product/pkg/config"
 	"github.com/sefikcan/ms-grpc-sample/product/pkg/logger"
-	"github.com/sefikcan/ms-grpc-sample/product/pkg/metric"
 	"github.com/sefikcan/ms-grpc-sample/product/pkg/storage/mongo"
-	"github.com/uber/jaeger-client-go"
-	jaegerCfg "github.com/uber/jaeger-client-go/config"
-	jaegerLog "github.com/uber/jaeger-client-go/log"
-	"github.com/uber/jaeger-lib/metrics"
-	"io"
+	"google.golang.org/grpc"
+	"net"
 )
 
 func main() {
+	log.Info("Starting product api server")
+
 	cfg := config.NewConfig()
 
 	zapLogger := logger.NewLogger(cfg)
 	zapLogger.InitLogger()
 	zapLogger.Infof("AppVersion: %s, LogLevel: %s, Mode: %s, SSL: %v", cfg.Server.AppVersion, cfg.Logger.Level, cfg.Server.Mode, false)
 
-	log.Info("Starting product api server")
+	serverAddress := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 
-	mongoDb, err := mongo.NewMongo(cfg)
-
-	jaegerConfigInstance := jaegerCfg.Configuration{
-		ServiceName: cfg.Metric.ServiceName,
-		Sampler: &jaegerCfg.SamplerConfig{
-			Type:  jaeger.SamplerTypeConst,
-			Param: 1,
-		},
-		Reporter: &jaegerCfg.ReporterConfig{
-			LogSpans:           cfg.Jaeger.LogSpans,
-			LocalAgentHostPort: cfg.Jaeger.Host,
-		},
-	}
-
-	tracer, closer, err := jaegerConfigInstance.NewTracer(
-		jaegerCfg.Logger(jaegerLog.StdLogger),
-		jaegerCfg.Metrics(metrics.NullFactory),
-	)
+	listen, err := net.Listen(cfg.Server.NetworkType, serverAddress)
 	if err != nil {
-		log.Fatal("cannot create tracer", err)
+		zapLogger.Fatalf("Failed to listen on: %v\n", err)
 	}
-	zapLogger.Info("Jaeger connected")
+	zapLogger.Infof("Listening on %s\n", serverAddress)
 
-	opentracing.SetGlobalTracer(tracer)
-	defer func(closer io.Closer) {
-		err := closer.Close()
-		if err != nil {
+	grpcServer := grpc.NewServer()
 
+	db, err := mongo.NewMongo(cfg)
+
+	databases, err := db.ListDatabaseNames(context.Background(), nil)
+	if err != nil {
+		zapLogger.Error("ERROR:", err.Error())
+	}
+
+	dbExists := false
+	for _, dbName := range databases {
+		if dbName == "productDb" {
+			dbExists = true
+			break
 		}
-	}(closer)
-	zapLogger.Info("Opentracing connected")
-
-	_, err = metric.CreateMetrics(cfg.Metric.Url, cfg.Metric.ServiceName)
-	if err != nil {
-		zapLogger.Errorf("CreateMetrics error: %s", err)
 	}
 
-	zapLogger.Infof("Metrics available URL: %s, ServiceName: %s", cfg.Metric.Url, cfg.Metric.ServiceName)
+	// If the database doesn't exist, create it
+	if !dbExists {
+		err := db.Database("productDb").CreateCollection(context.Background(), "product")
+		if err != nil {
+			zapLogger.Error("ERROR:", err.Error())
+		}
+	}
 
-	s := server.NewServer(cfg, mongoDb, zapLogger)
-	if err = s.Run(); err != nil {
-		log.Fatal(err)
+	collections, err := db.Database("productDb").ListCollectionNames(context.Background(), nil)
+	if err != nil {
+		zapLogger.Error("ERROR:", err.Error())
+	}
+
+	collectionExists := false
+	for _, colName := range collections {
+		if colName == "product" {
+			collectionExists = true
+			break
+		}
+	}
+
+	// If the collection doesn't exist, create it
+	if !collectionExists {
+		err := db.Database("productDb").CreateCollection(context.Background(), "product")
+		if err != nil {
+			zapLogger.Error("ERROR:", err.Error())
+		}
+	}
+
+	productRepository := repository.NewProductRepository(db)
+
+	use_case.NewProductUseCase(cfg, productRepository, zapLogger, grpcServer)
+
+	zapLogger.Infof("Server started at %v", listen.Addr().String())
+
+	err = grpcServer.Serve(listen)
+	if err != nil {
+		zapLogger.Error("ERROR:", err.Error())
 	}
 }

@@ -1,4 +1,4 @@
-package utils
+package mappers
 
 import (
 	"github.com/sefikcan/ms-grpc-sample/product/internal/entity"

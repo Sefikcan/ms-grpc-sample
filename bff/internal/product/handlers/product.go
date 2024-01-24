@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"context"
 	"github.com/labstack/echo/v4"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sefikcan/ms-grpc-sample/bff/internal/product/dto/requests"
 	"github.com/sefikcan/ms-grpc-sample/bff/internal/product/mappers"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/config"
@@ -22,9 +22,9 @@ type ProductHandlers interface {
 }
 
 type productHandlers struct {
-	cfg                  *config.Config
-	logger               logger.Logger
-	productServiceClient pb.ProductServiceClient
+	cfg    *config.Config
+	logger logger.Logger
+	c      pb.ProductServiceClient
 }
 
 // Create godoc
@@ -38,9 +38,6 @@ type productHandlers struct {
 // @Router /products [post]
 func (p productHandlers) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		span, spanContext := opentracing.StartSpanFromContext(util.GetRequestCtx(c), "productHandler.Create")
-		defer span.Finish()
-
 		productRequest := requests.CreateProductRequest{}
 		if err := c.Bind(&productRequest); err != nil {
 			p.logger.Errorf("Error, RequestId: %s, IPAddress: %s, Error: %s", util.GetRequestId(c), util.GetIPAddress(c), err)
@@ -49,7 +46,7 @@ func (p productHandlers) Create() echo.HandlerFunc {
 
 		clientReq := mappers.CreateProductRequestToGrpcRequestObject(productRequest)
 
-		res, err := p.productServiceClient.CreateProduct(spanContext, clientReq)
+		res, err := p.c.CreateProduct(context.Background(), clientReq)
 		if err != nil {
 			p.logger.Fatalf("Unexpected error: %v\n", err)
 		}
@@ -69,14 +66,11 @@ func (p productHandlers) Create() echo.HandlerFunc {
 // @Router /products/{id} [delete]
 func (p productHandlers) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		span, spanContext := opentracing.StartSpanFromContext(util.GetRequestCtx(c), "productHandler.Delete")
-		defer span.Finish()
-
 		req := &pb.DeleteProductRequest{
 			Id: c.Param("id"),
 		}
 
-		_, err := p.productServiceClient.DeleteProduct(spanContext, req)
+		_, err := p.c.DeleteProduct(context.Background(), req)
 		if err != nil {
 			p.logger.Errorf("Error happened while deleting: %v\n", err)
 		}
@@ -97,16 +91,15 @@ func (p productHandlers) Delete() echo.HandlerFunc {
 // @Router /products/{id} [put]
 func (p productHandlers) Update() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		span, spanContext := opentracing.StartSpanFromContext(util.GetRequestCtx(c), "productHandler.Update")
-		defer span.Finish()
-
 		req := requests.UpdateProductRequest{}
 		if err := c.Bind(&req); err != nil {
 			p.logger.Errorf("Error, RequestId: %s, IPAddress: %s, Error: %s", util.GetRequestId(c), util.GetIPAddress(c), err)
 			return c.JSON(http.StatusBadRequest, util.NewHttpResponse(http.StatusBadRequest, strings.ToLower(err.Error()), nil))
 		}
 
-		res, err := p.productServiceClient.UpdateProduct(spanContext, mappers.UpdateProductRequestToGrpcRequestObject(req))
+		id := c.Param("id")
+
+		res, err := p.c.UpdateProduct(context.Background(), mappers.UpdateProductRequestToGrpcRequestObject(id, req))
 		if err != nil {
 			p.logger.Errorf("Error happened while updating: %v\n", err)
 		}
@@ -126,12 +119,9 @@ func (p productHandlers) Update() echo.HandlerFunc {
 // @Router /products/{id} [get]
 func (p productHandlers) GetById() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		span, spanContext := opentracing.StartSpanFromContext(util.GetRequestCtx(c), "productHandler.GetById")
-		defer span.Finish()
-
 		req := &pb.GetProductDetailRequest{Id: c.Param("id")}
 
-		res, err := p.productServiceClient.GetProductDetail(spanContext, req)
+		res, err := p.c.GetProductDetail(context.Background(), req)
 		if err != nil {
 			p.logger.Errorf("Error happened while reading: %v\n", err)
 		}
@@ -146,10 +136,10 @@ func (p productHandlers) GetAll() echo.HandlerFunc {
 	}
 }
 
-func NewProductHandler(cfg *config.Config, logger logger.Logger, productServiceClient pb.ProductServiceClient) ProductHandlers {
+func NewProductHandler(cfg *config.Config, logger logger.Logger, c pb.ProductServiceClient) ProductHandlers {
 	return &productHandlers{
-		cfg:                  cfg,
-		logger:               logger,
-		productServiceClient: productServiceClient,
+		cfg:    cfg,
+		logger: logger,
+		c:      c,
 	}
 }

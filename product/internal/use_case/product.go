@@ -3,42 +3,34 @@ package use_case
 import (
 	"context"
 	"fmt"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sefikcan/ms-grpc-sample/product/internal/entity"
+	"github.com/sefikcan/ms-grpc-sample/product/internal/mappers"
 	"github.com/sefikcan/ms-grpc-sample/product/internal/repository"
-	"github.com/sefikcan/ms-grpc-sample/product/internal/utils"
 	"github.com/sefikcan/ms-grpc-sample/product/pkg/config"
 	"github.com/sefikcan/ms-grpc-sample/product/pkg/logger"
 	pb "github.com/sefikcan/ms-grpc-sample/proto"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 )
 
-type ProductUseCase interface {
-	Create(ctx context.Context, request *pb.CreateProductRequest) (*pb.CreateProductResponse, error)
-	GetById(ctx context.Context, request *pb.GetProductDetailRequest) (*pb.GetProductDetailResponse, error)
-	Delete(ctx context.Context, request *pb.DeleteProductRequest) (*pb.DeleteProductResponse, error)
-	Update(ctx context.Context, request *pb.UpdateProductRequest) (*pb.UpdateProductResponse, error)
-}
-
-type productUseCase struct {
+type ProductUseCase struct {
 	cfg               *config.Config
 	productRepository repository.ProductRepository
 	logger            logger.Logger
+	pb.UnimplementedProductServiceServer
 }
 
-func (p productUseCase) Create(ctx context.Context, request *pb.CreateProductRequest) (*pb.CreateProductResponse, error) {
-	span, spanContext := opentracing.StartSpanFromContext(ctx, "productUseCase.Create")
-	defer span.Finish()
-
+func (p ProductUseCase) Create(ctx context.Context, request *pb.CreateProductRequest) (*pb.CreateProductResponse, error) {
 	product := entity.Product{
 		Name:       request.Name,
 		Category:   request.Category,
 		OptionName: request.OptionName,
 	}
 
-	res, err := p.productRepository.Create(spanContext, product)
+	res, err := p.productRepository.Create(ctx, product)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -54,10 +46,7 @@ func (p productUseCase) Create(ctx context.Context, request *pb.CreateProductReq
 	}, nil
 }
 
-func (p productUseCase) GetById(ctx context.Context, request *pb.GetProductDetailRequest) (*pb.GetProductDetailResponse, error) {
-	span, spanContext := opentracing.StartSpanFromContext(ctx, "productUseCase.GetById")
-	defer span.Finish()
-
+func (p ProductUseCase) GetById(ctx context.Context, request *pb.GetProductDetailRequest) (*pb.GetProductDetailResponse, error) {
 	oid, err := primitive.ObjectIDFromHex(request.Id)
 	if err != nil {
 		return nil, status.Errorf(
@@ -66,7 +55,7 @@ func (p productUseCase) GetById(ctx context.Context, request *pb.GetProductDetai
 		)
 	}
 
-	res, err := p.productRepository.GetById(spanContext, oid)
+	res, err := p.productRepository.GetById(ctx, oid)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -74,13 +63,10 @@ func (p productUseCase) GetById(ctx context.Context, request *pb.GetProductDetai
 		)
 	}
 
-	return utils.DocumentToProduct(res), nil
+	return mappers.DocumentToProduct(res), nil
 }
 
-func (p productUseCase) Delete(ctx context.Context, request *pb.DeleteProductRequest) (*pb.DeleteProductResponse, error) {
-	span, spanContext := opentracing.StartSpanFromContext(ctx, "productUseCase.Delete")
-	defer span.Finish()
-
+func (p ProductUseCase) Delete(ctx context.Context, request *pb.DeleteProductRequest) (*pb.DeleteProductResponse, error) {
 	oid, err := primitive.ObjectIDFromHex(request.Id)
 	if err != nil {
 		return nil, status.Errorf(
@@ -89,7 +75,7 @@ func (p productUseCase) Delete(ctx context.Context, request *pb.DeleteProductReq
 		)
 	}
 
-	err = p.productRepository.Delete(spanContext, oid)
+	err = p.productRepository.Delete(ctx, oid)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -100,10 +86,7 @@ func (p productUseCase) Delete(ctx context.Context, request *pb.DeleteProductReq
 	return &pb.DeleteProductResponse{}, nil
 }
 
-func (p productUseCase) Update(ctx context.Context, request *pb.UpdateProductRequest) (*pb.UpdateProductResponse, error) {
-	span, spanContext := opentracing.StartSpanFromContext(ctx, "productUseCase.Update")
-	defer span.Finish()
-
+func (p ProductUseCase) Update(ctx context.Context, request *pb.UpdateProductRequest) (*pb.UpdateProductResponse, error) {
 	oid, err := primitive.ObjectIDFromHex(request.Id)
 	if err != nil {
 		return nil, status.Errorf(
@@ -119,7 +102,7 @@ func (p productUseCase) Update(ctx context.Context, request *pb.UpdateProductReq
 		Category:   request.Category,
 	}
 
-	res, err := p.productRepository.Update(spanContext, product)
+	res, err := p.productRepository.Update(ctx, product)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -135,10 +118,59 @@ func (p productUseCase) Update(ctx context.Context, request *pb.UpdateProductReq
 	}, nil
 }
 
-func NewProductUseCase(cfg *config.Config, productRepository repository.ProductRepository, logger logger.Logger) ProductUseCase {
-	return &productUseCase{
-		cfg:               cfg,
-		productRepository: productRepository,
-		logger:            logger,
+type ProductServerStruct struct {
+	pb.UnimplementedProductServiceServer
+	productUseCase *ProductUseCase
+}
+
+func NewProductUseCase(cfg *config.Config, productRepository repository.ProductRepository, logger logger.Logger, grpcServer *grpc.Server) *ProductUseCase {
+	productGrpc := &ProductServerStruct{
+		productUseCase: &ProductUseCase{
+			cfg:               cfg,
+			productRepository: productRepository,
+			logger:            logger,
+		},
 	}
+	pb.RegisterProductServiceServer(grpcServer, productGrpc)
+	return productGrpc.productUseCase
+}
+
+func (s *ProductServerStruct) CreateProduct(ctx context.Context, in *pb.CreateProductRequest) (*pb.CreateProductResponse, error) {
+	createdProduct, err := s.productUseCase.Create(ctx, in)
+	if err != nil {
+		log.Printf("Failed to create product: %v\n", err)
+		return nil, err
+	}
+
+	return createdProduct, nil
+}
+
+func (s *ProductServerStruct) UpdateProduct(ctx context.Context, in *pb.UpdateProductRequest) (*pb.UpdateProductResponse, error) {
+	updatedProduct, err := s.productUseCase.Update(ctx, in)
+	if err != nil {
+		log.Printf("Failed to update product: %v\n", err)
+		return nil, err
+	}
+
+	return updatedProduct, nil
+}
+
+func (s *ProductServerStruct) DeleteProduct(ctx context.Context, in *pb.DeleteProductRequest) (*pb.DeleteProductResponse, error) {
+	deletedProduct, err := s.productUseCase.Delete(ctx, in)
+	if err != nil {
+		log.Printf("Failed to delete product: %v\n", err)
+		return nil, err
+	}
+
+	return deletedProduct, nil
+}
+
+func (s *ProductServerStruct) GetProductDetail(ctx context.Context, in *pb.GetProductDetailRequest) (*pb.GetProductDetailResponse, error) {
+	product, err := s.productUseCase.GetById(ctx, in)
+	if err != nil {
+		log.Printf("Failed to get product: %v\n", err)
+		return nil, err
+	}
+
+	return product, nil
 }

@@ -21,7 +21,7 @@ func NewMongo(c *config.Config) (*mongo.Client, error) {
 		return nil, err
 	}
 
-	err = client.Ping(ctx, nil)
+	err = client.Ping(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
