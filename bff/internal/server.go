@@ -14,7 +14,6 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -56,8 +55,6 @@ func (s *Server) Run() error {
 
 	productServiceClient := pb.NewProductServiceClient(conn)
 
-	//ReadBlaBla(productServiceClient)
-
 	productHandler := handlers.NewProductHandler(s.cfg, s.logger, productServiceClient)
 
 	middlewareManager := middlewares.NewMiddlewareManager(s.cfg, s.logger)
@@ -97,18 +94,6 @@ func (s *Server) Run() error {
 	defer shutdown()
 	s.logger.Info("Server exited properly")
 	return s.echo.Server.Shutdown(ctx)
-}
-
-func ReadBlaBla(c pb.ProductServiceClient) {
-	log.Println("It's working!")
-	res, err := c.GetProductDetail(context.Background(), &pb.GetProductDetailRequest{
-		Id: "123",
-	})
-	if err != nil {
-		log.Printf("Error happened!: %v\n", err)
-	}
-
-	log.Println(res)
 }
 
 func NewServer(cfg *config.Config, logger logger.Logger) *Server {

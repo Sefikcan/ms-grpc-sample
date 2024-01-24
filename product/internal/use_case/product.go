@@ -42,7 +42,7 @@ func (p ProductUseCase) Create(ctx context.Context, request *pb.CreateProductReq
 		Name:       res.Name,
 		Category:   res.Category,
 		OptionName: res.OptionName,
-		Id:         res.Id.String(),
+		Id:         res.Id.Hex(),
 	}, nil
 }
 
@@ -114,7 +114,7 @@ func (p ProductUseCase) Update(ctx context.Context, request *pb.UpdateProductReq
 		Name:       res.Name,
 		Category:   res.Category,
 		OptionName: res.OptionName,
-		Id:         res.Id.String(),
+		Id:         res.Id.Hex(),
 	}, nil
 }
 

@@ -20,6 +20,8 @@ jaeger:
 mongo:
   hostName: "localhost"
   port: "27017"
+  databaseName: "productDb"
+  collectionName: "product"
 
 metric:
   url: "localhost:7070"

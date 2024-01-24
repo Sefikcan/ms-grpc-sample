@@ -41,42 +41,40 @@ func main() {
 
 	dbExists := false
 	for _, dbName := range databases {
-		if dbName == "productDb" {
+		if dbName == cfg.Mongo.DatabaseName {
 			dbExists = true
 			break
 		}
 	}
 
-	// If the database doesn't exist, create it
 	if !dbExists {
-		err := db.Database("productDb").CreateCollection(context.Background(), "product")
+		err := db.Database(cfg.Mongo.DatabaseName).CreateCollection(context.Background(), cfg.Mongo.CollectionName)
 		if err != nil {
 			zapLogger.Error("ERROR:", err.Error())
 		}
 	}
 
-	collections, err := db.Database("productDb").ListCollectionNames(context.Background(), nil)
+	collections, err := db.Database(cfg.Mongo.DatabaseName).ListCollectionNames(context.Background(), nil)
 	if err != nil {
 		zapLogger.Error("ERROR:", err.Error())
 	}
 
 	collectionExists := false
 	for _, colName := range collections {
-		if colName == "product" {
+		if colName == cfg.Mongo.CollectionName {
 			collectionExists = true
 			break
 		}
 	}
 
-	// If the collection doesn't exist, create it
 	if !collectionExists {
-		err := db.Database("productDb").CreateCollection(context.Background(), "product")
+		err := db.Database(cfg.Mongo.DatabaseName).CreateCollection(context.Background(), cfg.Mongo.CollectionName)
 		if err != nil {
 			zapLogger.Error("ERROR:", err.Error())
 		}
 	}
 
-	productRepository := repository.NewProductRepository(db)
+	productRepository := repository.NewProductRepository(db, cfg)
 
 	use_case.NewProductUseCase(cfg, productRepository, zapLogger, grpcServer)
 
