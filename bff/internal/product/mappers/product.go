@@ -14,9 +14,9 @@ func CreateProductRequestToGrpcRequestObject(productRequest requests.CreateProdu
 	}
 }
 
-func UpdateProductRequestToGrpcRequestObject(productRequest requests.UpdateProductRequest) *pb.UpdateProductRequest {
+func UpdateProductRequestToGrpcRequestObject(id string, productRequest requests.UpdateProductRequest) *pb.UpdateProductRequest {
 	return &pb.UpdateProductRequest{
-		Id:         productRequest.Id,
+		Id:         id,
 		Name:       productRequest.Name,
 		Category:   productRequest.Category,
 		OptionName: productRequest.OptionName,

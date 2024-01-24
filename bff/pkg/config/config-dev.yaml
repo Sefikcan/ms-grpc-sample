@@ -9,7 +9,7 @@ server:
   ctxTimeout: 4
 
 clients:
-  productClientUrl: "localhost:50051"
+  productClientUrl: "localhost:50053"
 
 logger:
   development: true

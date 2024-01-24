@@ -41,10 +41,12 @@ type LoggerConfig struct {
 }
 
 type MongoConfig struct {
-	UserName string `mapstructure:"userName"`
-	Password string `mapstructure:"password"`
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
+	UserName       string `mapstructure:"userName"`
+	Password       string `mapstructure:"password"`
+	Host           string `mapstructure:"host"`
+	Port           string `mapstructure:"port"`
+	DatabaseName   string `mapstructure:"databaseName"`
+	CollectionName string `mapstructure:"collectionName"`
 }
 
 type MetricConfig struct {

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/sefikcan/ms-grpc-sample/product/internal/entity"
+	"github.com/sefikcan/ms-grpc-sample/product/pkg/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,25 +17,29 @@ type ProductRepository interface {
 }
 
 type productRepository struct {
-	db *mongo.Client
+	db     *mongo.Client
+	config *config.Config
 }
 
 func (p productRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
-	collection := p.db.Database("productDb").Collection("product")
+	collection := p.db.Database(p.config.Mongo.DatabaseName).Collection(p.config.Mongo.CollectionName)
 
-	_, err := collection.DeleteOne(ctx, id)
+	filter := bson.M{"_id": id}
+
+	_, err := collection.DeleteOne(ctx, filter)
 	return err
 }
 
 func (p productRepository) Create(ctx context.Context, product entity.Product) (entity.Product, error) {
-	collection := p.db.Database("productDb").Collection("product")
+	collection := p.db.Database(p.config.Mongo.DatabaseName).Collection(p.config.Mongo.CollectionName)
 
-	_, err := collection.InsertOne(ctx, product)
+	id, err := collection.InsertOne(ctx, product)
+	product.Id = id.InsertedID.(primitive.ObjectID)
 	return product, err
 }
 
 func (p productRepository) Update(ctx context.Context, product entity.Product) (entity.Product, error) {
-	collection := p.db.Database("productDb").Collection("product")
+	collection := p.db.Database(p.config.Mongo.DatabaseName).Collection(p.config.Mongo.CollectionName)
 
 	filter := bson.M{
 		"_id": product.Id,
@@ -50,7 +55,7 @@ func (p productRepository) Update(ctx context.Context, product entity.Product) (
 }
 
 func (p productRepository) GetById(ctx context.Context, id primitive.ObjectID) (entity.Product, error) {
-	collection := p.db.Database("productDb").Collection("product")
+	collection := p.db.Database(p.config.Mongo.DatabaseName).Collection(p.config.Mongo.CollectionName)
 
 	var product entity.Product
 	err := collection.FindOne(ctx, bson.M{"_id": id}).Decode(&product)
@@ -61,8 +66,9 @@ func (p productRepository) GetById(ctx context.Context, id primitive.ObjectID) (
 	return product, nil
 }
 
-func NewProductRepository(db *mongo.Client) ProductRepository {
+func NewProductRepository(db *mongo.Client, config *config.Config) ProductRepository {
 	return &productRepository{
-		db: db,
+		db:     db,
+		config: config,
 	}
 }

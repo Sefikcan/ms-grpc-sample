@@ -177,15 +177,11 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "category",
-                "id",
                 "name",
                 "optionName"
             ],
             "properties": {
                 "category": {
-                    "type": "string"
-                },
-                "id": {
                     "type": "string"
                 },
                 "name": {

@@ -19,8 +19,6 @@ definitions:
     properties:
       category:
         type: string
-      id:
-        type: string
       name:
         maxLength: 12
         minLength: 3
@@ -29,7 +27,6 @@ definitions:
         type: string
     required:
     - category
-    - id
     - name
     - optionName
     type: object
