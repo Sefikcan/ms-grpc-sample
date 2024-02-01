@@ -22,5 +22,5 @@ jaeger:
   logSpans: false
 
 metric:
-  url: "localhost:7071"
+  url: "localhost:50050"
   serviceName: "Bff_Api"

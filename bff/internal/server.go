@@ -9,6 +9,7 @@ import (
 	"github.com/sefikcan/ms-grpc-sample/bff/internal/product/handlers"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/config"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/logger"
+	"github.com/sefikcan/ms-grpc-sample/bff/pkg/metric"
 	"github.com/sefikcan/ms-grpc-sample/bff/pkg/util"
 	pb "github.com/sefikcan/ms-grpc-sample/proto"
 	echoSwagger "github.com/swaggo/echo-swagger"
@@ -53,6 +54,12 @@ func (s *Server) Run() error {
 		}
 	}(conn)
 
+	metrics, err := metric.CreateMetric(s.cfg.Metric.Url, s.cfg.Metric.ServiceName)
+	if err != nil {
+		s.logger.Errorf("CreateMetric error: %s", err)
+	}
+	s.logger.Infof("Metrics available URL: %s, ServiceName: %s", s.cfg.Metric.Url, s.cfg.Metric.ServiceName)
+
 	productServiceClient := pb.NewProductServiceClient(conn)
 
 	productHandler := handlers.NewProductHandler(s.cfg, s.logger, productServiceClient)
@@ -70,7 +77,7 @@ func (s *Server) Run() error {
 		DisableStackAll:   true,
 	}))
 	s.echo.Use(middleware.RequestID())
-	//s.echo.Use(middlewareManager.MetricsMiddleware(metrics))
+	s.echo.Use(middlewareManager.MetricMiddleware(metrics))
 	s.echo.Use(middleware.Secure())
 	s.echo.Use(middleware.BodyLimit("2M"))
 	s.echo.GET("/swagger/*", echoSwagger.WrapHandler)

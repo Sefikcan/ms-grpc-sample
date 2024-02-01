@@ -10,7 +10,7 @@ services:
     volumes:
       - ./prometheus:/etc/monitoring
       - prometheus-data:/monitoring
-    command: --web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml  # If you use --web.enable-lifecycle you can reload configuration files (e.g. rules) without restarting Prometheus:
+    command: --web.enable-lifecycle --config.file=/etc/monitoring/prometheus.yml  # If you use --web.enable-lifecycle you can reload configuration files (e.g. rules) without restarting Prometheus:
     networks:
       - grpc_sample
 
@@ -90,6 +90,16 @@ services:
       - elasticsearch
     ports:
       - "5601:5601"
+    networks:
+      - grpc_sample
+
+  bff_app:
+    build:
+      dockerfile: Bff.Dockerfile
+    container_name: bff_app
+    restart: unless-stopped
+    ports:
+      - "50053:50053"
     networks:
       - grpc_sample
 

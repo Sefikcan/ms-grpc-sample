@@ -32,8 +32,8 @@ scrape_configs:
     static_configs:
       - targets:
           - prom_middleware:9091
-  - job_name: 'prom_go_app'
+  - job_name: 'bff_app'
     scrape_interval: 5s
     static_configs:
       - targets:
-          - "host.docker.internal:8080"
+          - "bff_app:50053"

@@ -6,12 +6,10 @@ require (
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/labstack/gommon v0.4.2
 	github.com/olivere/elastic/v7 v7.0.32
-	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.18.0
 	github.com/spf13/viper v1.18.2
 	github.com/swaggo/echo-swagger v1.4.1
-	github.com/uber/jaeger-client-go v2.30.0+incompatible
-	github.com/uber/jaeger-lib v2.4.1+incompatible
+	github.com/swaggo/swag v1.16.2
 	go.mongodb.org/mongo-driver v1.13.1
 	go.uber.org/zap v1.26.0
 	google.golang.org/grpc v1.59.0
@@ -19,7 +17,6 @@ require (
 )
 
 require (
-	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -55,14 +52,12 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
-	github.com/swaggo/swag v1.16.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
