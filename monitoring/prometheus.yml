@@ -36,4 +36,4 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets:
-          - "bff_app:50053"
+          - "bff_app:50050"

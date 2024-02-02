@@ -9,18 +9,17 @@ COPY ./ /app
 RUN go mod download
 
 # Build the binary
-RUN go build -o /app/main bff/cmd/server/main.go
+RUN go build -o /app/main product/cmd/server/main.go
 
 # Intermediate stage: Build the binary
 FROM golang:1.21.3-alpine
 
 COPY --from=builder /app/main /app/main
-COPY --from=builder /app/bff/pkg/config /app/bff/pkg/config
-COPY --from=builder /app/docs /app/docs
+COPY --from=builder /app/product/pkg/config /app/product/pkg/config
 
 WORKDIR /app
 ENV environment=DEV
 
-EXPOSE 50050
+EXPOSE 50053
 
 ENTRYPOINT ["./main"]

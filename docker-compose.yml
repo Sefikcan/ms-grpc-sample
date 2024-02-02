@@ -11,8 +11,6 @@ services:
       - ./prometheus:/etc/monitoring
       - prometheus-data:/monitoring
     command: --web.enable-lifecycle --config.file=/etc/monitoring/prometheus.yml  # If you use --web.enable-lifecycle you can reload configuration files (e.g. rules) without restarting Prometheus:
-    networks:
-      - grpc_sample
 
   mongo:
     container_name: mongo
@@ -22,8 +20,6 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
-    networks:
-      - grpc_sample
 
   grafana:
     container_name: grafana_container
@@ -34,8 +30,6 @@ services:
     volumes:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources # data source configuration
       - grafana-data:/var/lib/grafana # used to save dashboards
-    networks:
-      - grpc_sample
 
   alertmanager:
     image: prom/alertmanager:v0.23.0
@@ -45,8 +39,6 @@ services:
     volumes:
       - "./monitoring:/config"
       - alertmanager-data:/data
-    networks:
-      - grpc_sample
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -63,8 +55,6 @@ services:
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     expose:
       - 9100
-    networks:
-      - grpc_sample
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.13.1
@@ -78,8 +68,6 @@ services:
       - "9200:9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
-    networks:
-      - grpc_sample
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.13.1
@@ -90,18 +78,42 @@ services:
       - elasticsearch
     ports:
       - "5601:5601"
-    networks:
-      - grpc_sample
 
   bff_app:
     build:
-      dockerfile: Bff.Dockerfile
+      dockerfile: deployments/Bff.Dockerfile
     container_name: bff_app
     restart: unless-stopped
+    volumes:
+      - ./config:/bff/pkg/config
+    ports:
+      - "50050:50050"
+    depends_on:
+      - prometheus
+      - mongo
+      - grafana
+      - alertmanager
+      - node-exporter
+      - elasticsearch
+      - kibana
+
+  product_app:
+    build:
+      dockerfile: deployments/Product.Dockerfile
+    container_name: product_app
+    restart: unless-stopped
+    volumes:
+      - ./config:/product/pkg/config
     ports:
       - "50053:50053"
-    networks:
-      - grpc_sample
+    depends_on:
+      - prometheus
+      - mongo
+      - grafana
+      - alertmanager
+      - node-exporter
+      - elasticsearch
+      - kibana
 
 volumes:
   mongo-data:
@@ -109,7 +121,3 @@ volumes:
   grafana-data:
   alertmanager-data:
   elasticsearch-data:
-
-networks:
-  grpc_sample:
-    driver: bridge
