@@ -8,9 +8,9 @@ services:
     ports:
       - "9000:9090"
     volumes:
-      - ./prometheus:/etc/monitoring
+      - ./prometheus:/etc/monitoring/prometheus.yml
       - prometheus-data:/monitoring
-    command: --web.enable-lifecycle --config.file=/etc/monitoring/prometheus.yml  # If you use --web.enable-lifecycle you can reload configuration files (e.g. rules) without restarting Prometheus:
+    #command: --web.enable-lifecycle --config.file=/etc/monitoring/prometheus.yml  # If you use --web.enable-lifecycle you can reload configuration files (e.g. rules) without restarting Prometheus:
 
   mongo:
     container_name: mongo
@@ -88,14 +88,6 @@ services:
       - ./config:/bff/pkg/config
     ports:
       - "50050:50050"
-    depends_on:
-      - prometheus
-      - mongo
-      - grafana
-      - alertmanager
-      - node-exporter
-      - elasticsearch
-      - kibana
 
   product_app:
     build:
@@ -106,14 +98,6 @@ services:
       - ./config:/product/pkg/config
     ports:
       - "50053:50053"
-    depends_on:
-      - prometheus
-      - mongo
-      - grafana
-      - alertmanager
-      - node-exporter
-      - elasticsearch
-      - kibana
 
 volumes:
   mongo-data:
